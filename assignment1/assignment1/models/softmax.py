@@ -19,6 +19,12 @@ class Softmax:
         self.reg_const = reg_const
         self.n_class = n_class
 
+    def softmax(self, inp: np.ndarray) -> np.ndarray:
+    
+        inp = inp - inp.max()
+
+        return np.exp(inp) / np.sum(np.exp(inp))
+
     def calc_gradient(self, X_train: np.ndarray, y_train: np.ndarray) -> np.ndarray:
         """Calculate gradient of the softmax loss.
 
@@ -35,6 +41,9 @@ class Softmax:
             gradient with respect to weights w; an array of same shape as w
         """
         # TODO: implement me
+
+        
+
         return
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
@@ -48,7 +57,28 @@ class Softmax:
             y_train: a numpy array of shape (N,) containing training labels
         """
         # TODO: implement me
-        return
+
+        # one hot encoding
+        vector_lookup = np.eye(y_train.max() + 1)
+        y_train_one_hot = vector_lookup[y_train]
+
+        batch_size = 64
+        X_train = np.insert(X_train, X_train.shape[1], 1, axis=1)
+        self.w = np.random.randn(X_train.shape[1], y_train_one_hot.shape[1]) * 1e-1
+        # training
+        for epoch in range(self.epochs):
+            
+            x_batched = X_train
+            y_batched = y_train_one_hot
+
+            for i in range(batch_size):
+                
+                output = np.dot(x_batched, self.w)
+                grad = self.calc_gradient(x_batched, y_batched)
+
+                self.w = self.w - self.lr * grad
+
+
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         """Use the trained weights to predict labels for test data points.
