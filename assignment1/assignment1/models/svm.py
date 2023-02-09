@@ -46,13 +46,29 @@ class SVM:
                 elif y_i == 0:
                     grad[i] = int(pred[i] > 1) * X_train[i]
         elif self.n_class > 2:
+            # h, w = self.w.shape
+            # grad = np.zeros((self.batch_size, h, w))
+            # for idx, y_i in enumerate(y_train):
+            #     for c in range(pred.shape[1]):
+            #         if c != y_i and (pred[idx][y_i]-pred[idx][c] < 1):
+            #             grad[idx][c] += X_train[y_i]
+            #             grad[idx][y_i] -=  X_train[y_i]
+            
+            thersholds = np.zeros(self.batch_size)
+            for idx, cls in enumerate(y_train):
+                thersholds[idx] = pred[idx][cls]
+                pred[idx][cls] = -10000
+            thersholds = np.tile(thersholds[:, None], self.n_class)
+
+            num_other_class_update = (thersholds - pred < 1) # score of the corret class is set to an negative number
+            num_correct_class_update = np.sum(num_other_class_update, axis=1) 
+            
+            
             h, w = self.w.shape
             grad = np.zeros((self.batch_size, h, w))
-            for idx, y_i in enumerate(y_train):
-                for c in range(pred.shape[1]):
-                    if c != y_i and (pred[idx][y_i]-pred[idx][c] < 1):
-                        grad[idx][c] += X_train[y_i]
-                        grad[idx][y_i] -=  X_train[y_i]
+            for i in range(self.batch_size):
+                grad[i][y_train[i]] = -num_correct_class_update[i] * X_train[i] 
+                grad[i][num_other_class_update[i]] = X_train[i] 
         
         return grad.mean(axis=0) 
 
