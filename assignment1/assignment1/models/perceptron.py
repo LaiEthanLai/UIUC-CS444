@@ -29,7 +29,7 @@ class Perceptron:
             elif y_i == 0:
                 grad[i] = int(pred[i] > 0) * data[i]
         
-        return grad.mean() #+ np.sqrt((self.w[:-1])**2).mean()
+        return grad.mean(axis=0) #+ np.sqrt((self.w[:-1])**2).mean()
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
         """Train the classifier.
