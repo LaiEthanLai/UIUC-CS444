@@ -19,6 +19,8 @@ class Softmax:
         self.reg_const = reg_const
         self.n_class = n_class
 
+        np.random.seed(42)
+
     def softmax(self, inp: np.ndarray) -> np.ndarray:
     
         inp = inp - inp.max()
@@ -41,10 +43,12 @@ class Softmax:
             gradient with respect to weights w; an array of same shape as w
         """
         # TODO: implement me
-
         
+        return np.matmul(y_train.T, X_train) / X_train.shape[0]
 
-        return
+    def min_max(self, x: np.ndarray) -> np.ndarray:
+
+        return (x - x.min()) / (x.max() - x.min())
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
         """Train the classifier.
@@ -62,22 +66,38 @@ class Softmax:
         vector_lookup = np.eye(y_train.max() + 1)
         y_train_one_hot = vector_lookup[y_train]
 
+        # label smoothing
+        # epsilon = 5e-3
+        # y_train_one_hot = np.abs(y_train_one_hot - epsilon) / (X_train.shape[0])
+        # print(y_train_one_hot[:, y_train])
+        # # y_train_one_hot[y_train_one_hot.argmax(axis=1)] *= (X_train.shape[0])
+
+        # print(y_train_one_hot.max())
+
         batch_size = 64
+        X_train = self.min_max(X_train)
         X_train = np.insert(X_train, X_train.shape[1], 1, axis=1)
-        self.w = np.random.randn(X_train.shape[1], y_train_one_hot.shape[1]) * 1e-1
+        self.w = np.random.randn(y_train_one_hot.shape[1], X_train.shape[1]) * 5e-2
+        self.w[:, -1] = 0
+        train_iter = X_train.shape[0] // batch_size # neglect last X_train.shape[0] % batch_size data
         # training
         for epoch in range(self.epochs):
             
-            x_batched = X_train
-            y_batched = y_train_one_hot
+            # shuffle data (https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison)
+            shuffled_index = np.random.permutation(X_train.shape[0])
+            X_train = X_train[shuffled_index]
+            y_train_one_hot = y_train_one_hot[shuffled_index]
 
-            for i in range(batch_size):
+            for i in range(train_iter):
                 
-                output = np.dot(x_batched, self.w)
-                grad = self.calc_gradient(x_batched, y_batched)
-
-                self.w = self.w - self.lr * grad
-
+                x_batched = X_train[i*batch_size:(i+1)*batch_size]
+                y_batched = y_train_one_hot[i*batch_size:(i+1)*batch_size]
+                
+                output = np.dot(x_batched, self.w.T)
+                output = self.softmax(output)
+                
+                grad = self.calc_gradient(x_batched, (output - y_batched))
+                self.w = self.w - self.lr * (grad + self.reg_const * (self.w) / batch_size)
 
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
@@ -93,4 +113,8 @@ class Softmax:
                 class.
         """
         # TODO: implement me
-        return
+
+        X_test = self.min_max(X_test)
+        X_test = np.insert(X_test, X_test.shape[1], 1, axis=1)
+        
+        return  self.softmax(np.dot(X_test, self.w.T)).argmax(axis=1)
