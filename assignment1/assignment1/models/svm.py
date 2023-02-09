@@ -18,6 +18,7 @@ class SVM:
         self.epochs = epochs
         self.reg_const = reg_const
         self.n_class = n_class
+        self.batch_size = 128
 
     def calc_gradient(self, X_train: np.ndarray, y_train: np.ndarray, pred: np.ndarray) -> np.ndarray:
         """Calculate gradient of the svm hinge loss.
@@ -37,12 +38,21 @@ class SVM:
         """
         # TODO: implement me
 
-        grad = np.zeros(X_train.shape)
-        for i, y_i in enumerate(y_train):
-            if y_i == 1:
-                grad[i] = - int(pred[i] < 1) * X_train[i]
-            elif y_i == 0:
-                grad[i] = int(pred[i] > 1) * X_train[i]
+        if self.n_class == 2:
+            grad = np.zeros(X_train.shape)
+            for i, y_i in enumerate(y_train):
+                if y_i == 1:
+                    grad[i] = - int(pred[i] < 1) * X_train[i]
+                elif y_i == 0:
+                    grad[i] = int(pred[i] > 1) * X_train[i]
+        elif self.n_class > 2:
+            h, w = self.w.shape
+            grad = np.zeros((self.batch_size, h, w))
+            for idx, y_i in enumerate(y_train):
+                for c in range(pred.shape[1]):
+                    if c != y_i and (pred[idx][y_i]-pred[idx][c] < 1):
+                        grad[idx][c] += X_train[y_i]
+                        grad[idx][y_i] -=  X_train[y_i]
         
         return grad.mean(axis=0) 
 
@@ -57,7 +67,7 @@ class SVM:
                 N examples with D dimensions
             y_train: a numpy array of shape (N,) containing training labels
         """
-        batch_size = 128
+        
         # min-max 
         X_train = (X_train - X_train.min()) / (X_train.max() - X_train.min()) 
 
@@ -71,7 +81,7 @@ class SVM:
             self.w[-1] = 0
             
             # train_iter = X_train.shape[0] // batch_size + int(X_train.shape[0] % batch_size != 0) (deal with different weight shapes)
-            train_iter = X_train.shape[0] // batch_size # neglect last X_train.shape[0] % batch_size data
+            train_iter = X_train.shape[0] // self.batch_size # neglect last X_train.shape[0] % batch_size data
 
             for epoch in range(self.epochs):
 
@@ -82,8 +92,8 @@ class SVM:
 
                 for i in range(train_iter):
                     
-                    x_batched = X_train[i*batch_size:(i+1)*batch_size]
-                    y_batched = y_train[i*batch_size:(i+1)*batch_size]
+                    x_batched = X_train[i*self.batch_size:(i+1)*self.batch_size]
+                    y_batched = y_train[i*self.batch_size:(i+1)*self.batch_size]
 
                     output = np.dot(x_batched, self.w)
 
@@ -97,12 +107,30 @@ class SVM:
             # prepare mini-batched data 
             # fashion: x.shape = 50000 x 784, y.shape = 50000
             
-            self.w = np.random.randn(784)
+            X_train = np.insert(X_train, X_train.shape[1], 1, axis=1) # w/ bias
+            self.w = 1e-2*np.random.randn((y_train.max()+1), X_train.shape[1])
+            self.w[:, -1] = 0
 
-            train_iter = X_train.shape[0] // batch_size 
+            train_iter = X_train.shape[0] // self.batch_size 
             
-            print(train_iter)
-            
+            for epoch in range(self.epochs):
+
+                # shuffle data (https://stackoverflow.com/questions/4601373/better-way-to-shuffle-two-numpy-arrays-in-unison)
+                shuffled_index = np.random.permutation(X_train.shape[0])
+                X_train = X_train[shuffled_index]
+                y_train = y_train[shuffled_index]
+
+                for i in range(train_iter):
+                    
+                    x_batched = X_train[i*self.batch_size:(i+1)*self.batch_size]
+                    y_batched = y_train[i*self.batch_size:(i+1)*self.batch_size]
+
+                    output = np.dot(x_batched, self.w.T)
+
+                    # update
+                    self.w = self.w - self.lr * (
+                        self.calc_gradient(x_batched, y_batched, output) 
+                        + self.reg_const * self.w / x_batched.shape[0]) 
 
         else:
             print('num of classes should >= 2')
@@ -123,4 +151,5 @@ class SVM:
 
         X_test = (X_test - X_test.min()) / (X_test.max() - X_test.min()) 
         
-        return  (np.dot(np.insert(X_test, X_test.shape[1], 1, axis=1), self.w) > 0).astype(np.int32)
+        return (np.dot(np.insert(X_test, X_test.shape[1], 1, axis=1), self.w) > 0).astype(np.int32) if self.n_class == 2 \
+                else (np.dot(np.insert(X_test, X_test.shape[1], 1, axis=1), self.w.T)).argmax(axis=1)
