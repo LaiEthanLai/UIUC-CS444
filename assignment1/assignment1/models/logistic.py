@@ -18,14 +18,18 @@ class Logistic:
 
     def compute_grad(self, pred: np.ndarray, label: np.ndarray, data: np.ndarray) -> np.ndarray:
 
-        grad = np.zeros(data.shape)
-        for i, y_i in enumerate(label):
-            if y_i == 1:
-                grad[i] = -self.sigmoid(-pred[i]) * data[i]
-            elif y_i == 0:
-                grad[i] = self.sigmoid(pred[i]) * data[i]
+        # grad = np.zeros(data.shape)
+        # for i, y_i in enumerate(label):
+        #     if y_i == 1:
+        #         grad[i] = -self.sigmoid(-pred[i]) * data[i]
+        #     elif y_i == 0:
+        #         grad[i] = self.sigmoid(pred[i]) * data[i]
 
-        return grad.mean() 
+        label = label * 2 - 1 # {0, 1} -> {1, -1}
+        pred = label * pred
+        grad = self.sigmoid(pred * -1)[:, None] * data * label[:, None]  # [:, None] for Python broadcasting
+
+        return grad.mean(axis=0) * -1
 
     def sigmoid(self, z: np.ndarray) -> np.ndarray:
         """Sigmoid function.
@@ -36,8 +40,12 @@ class Logistic:
         Returns:
             the sigmoid of the input
         """
+        out = np.zeros_like(z)
+        for idx, item in enumerate(z):
+            out[idx] = 1 / (1 + np.exp(-1*item)) if item >= 0 else np.exp(item) / (np.exp(item) + 1)
+
+        return out
         
-        return 1 / (1 + np.exp(-1*z))
 
     def train(self, X_train: np.ndarray, y_train: np.ndarray):
         """Train the classifier.
@@ -51,13 +59,14 @@ class Logistic:
         """
         
         batch_size = 32
+        X_train = (X_train - X_train.min()) / (X_train.max() - X_train.min()) 
 
         # prepare mini-batched data 
         # rice: x.shape = 10911 x 11, y.shape = 10911
         
         X_train = np.insert(X_train, X_train.shape[1], 1, axis=1) # w/ bias
         self.w = np.random.randn(12) # w/ bias
-        self.w[-1] = np.random.randn(1)
+        self.w[-1] = 0
         
         # train_iter = X_train.shape[0] // batch_size + int(X_train.shape[0] % batch_size != 0) (deal with different weight shapes)
         train_iter = X_train.shape[0] // batch_size # neglect last X_train.shape[0] % batch_size data

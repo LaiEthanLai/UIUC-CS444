@@ -39,12 +39,17 @@ class SVM:
         # TODO: implement me
 
         if self.n_class == 2:
-            grad = np.zeros(X_train.shape)
-            for i, y_i in enumerate(y_train):
-                if y_i == 1:
-                    grad[i] = - int(pred[i] < 1) * X_train[i]
-                elif y_i == 0:
-                    grad[i] = int(pred[i] > 1) * X_train[i]
+            # grad = np.zeros(X_train.shape)
+            # for i, y_i in enumerate(y_train):
+            #     if y_i == 1:
+            #         grad[i] = - int(pred[i] < 1) * X_train[i]
+            #     elif y_i == 0:
+            #         grad[i] = int(pred[i] > 1) * X_train[i]
+
+            y_train = y_train * 2 - 1 # {0, 1} -> {1, -1}
+            pred = y_train * pred
+            grad = (pred < 1)[:, None] * X_train * (-y_train[:, None]) # [:, None] for Python broadcasting
+
         elif self.n_class > 2:
             # h, w = self.w.shape
             # grad = np.zeros((self.batch_size, h, w))
