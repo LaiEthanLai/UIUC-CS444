@@ -133,4 +133,6 @@ dmypy.json
 .zip
 .gz
 cats/
-MNIST_data
+MNIST_data/
+Abstract_gallery/
+Abstract_gallery2/
