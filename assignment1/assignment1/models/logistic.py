@@ -65,7 +65,7 @@ class Logistic:
         # rice: x.shape = 10911 x 11, y.shape = 10911
         
         X_train = np.insert(X_train, X_train.shape[1], 1, axis=1) # w/ bias
-        self.w = np.random.randn(12) # w/ bias
+        self.w = np.random.randn(12)*1e-2 # w/ bias
         self.w[-1] = 0
         
         # train_iter = X_train.shape[0] // batch_size + int(X_train.shape[0] % batch_size != 0) (deal with different weight shapes)
@@ -103,4 +103,5 @@ class Logistic:
                 class.
         """
         # TODO: implement me
+        X_test = (X_test - X_test.min()) / (X_test.max() - X_test.min()) 
         return (self.sigmoid(np.dot(np.insert(X_test, X_test.shape[1], 1, axis=1), self.w) > 0)).astype(np.int32)

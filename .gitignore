@@ -131,3 +131,6 @@ dmypy.json
 # data type
 .jpg
 .zip
+.gz
+cats/
+MNIST_data

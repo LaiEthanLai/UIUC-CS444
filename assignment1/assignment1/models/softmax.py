@@ -98,6 +98,9 @@ class Softmax:
                 
                 grad = self.calc_gradient(x_batched, (output - y_batched))
                 self.w = self.w - self.lr * (grad + self.reg_const * (self.w) / batch_size)
+            
+            if (epoch+1)%20 == 0:
+                self.lr *= 0.92
 
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
