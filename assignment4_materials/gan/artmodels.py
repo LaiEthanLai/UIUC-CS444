@@ -9,6 +9,7 @@ trans4x4_s4 = partial(nn.ConvTranspose2d, kernel_size=4, stride=4, bias=False)
 trans4x4_s1 = partial(nn.ConvTranspose2d, kernel_size=4, stride=1, bias=False)
 trans4x4_s2 = partial(nn.ConvTranspose2d, kernel_size=4, stride=2, bias=False)
 trans2x2_s2 = partial(nn.ConvTranspose2d, kernel_size=2, stride=2, bias=False)
+conv1x1_s1 = partial(nn.Conv2d, kernel_size=1, stride=1, bias=True)
 
 class Discriminator(torch.nn.Module):
     def __init__(self, input_channels=3, spectral_norm=False):
@@ -72,8 +73,9 @@ class Generator(torch.nn.Module):
         ####################################
         #          YOUR CODE HERE          #
         ####################################
+        self.proj = conv1x1_s1(noise_dim, 1024)
         self.gen = nn.Sequential(
-            trans4x4_s1(noise_dim, 1024),
+            trans4x4_s1(1024, 1024),
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(negative_slope=0.2),
             trans4x4_s4(1024, 1024),
@@ -98,15 +100,16 @@ class Generator(torch.nn.Module):
         
         ##########       END      ##########
     
-    def forward(self, x):
+    def forward(self, z):
         
         ####################################
         #          YOUR CODE HERE          #
         ####################################
-        x = x[..., None, None]
+        z = z[..., None, None]
+        w = self.proj(z)
         
         ##########       END      ##########
-        return self.gen(x)
+        return self.gen(w)
     
 
 class self_attention_Generator(torch.nn.Module):
