@@ -12,8 +12,8 @@ def getRandom(low: float, high: float) -> float:
 
     return random() * (high - low) + low
 
-def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, show_every=250, 
-              batch_size=128, noise_size=100, num_epochs=10, train_loader=None, device=None, train_every=1, l_gp=10, soft_label=False):
+def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, gan_type, show_every=250, 
+              batch_size=128, noise_size=100, num_epochs=10, train_loader=None, device=None, train_every=1, l_gp=10, soft_label=False, save_every=None):
     """
     Train loop for GAN.
     
@@ -118,14 +118,18 @@ def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, show_eve
                   print('Iter: {}, D: {:.4}, G:{:.4}'.format(iter_count,d_error.item(),g_error.item()))
                 else:
                   print('Iter: {}, D: {:.4}, G is not trained in this iter'.format(iter_count,d_error.item()))
-                  with torch.no_grad():
-                    fake_images = G(sample).reshape(batch_size, input_channels, img_size, img_size)
+                with torch.no_grad():
+                  fake_images = G(sample).reshape(batch_size, input_channels, img_size, img_size)
                 disp_fake_images = deprocess_img(fake_images.data)  # denormalize
                 imgs_numpy = (disp_fake_images).cpu().numpy()
                 show_images(imgs_numpy[0:16], color=input_channels!=1)
                 plt.show()
                 print()
             iter_count += 1
+
+            if (iter_count % save_every == 0):
+              torch.save(G.state_dict(), f'{gan_type}_{iter_count}.pt')
+              torch.save(D.state_dict(), f'{gan_type}_{iter_count}.pt')
 
 def train_wgan():
   pass
