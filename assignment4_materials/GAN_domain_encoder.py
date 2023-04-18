@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
-from torchvision.models import vgg16
+from torchvision.models import vgg16, VGG16_Weights
 import torchvision.transforms as transforms
 
 from gan.models import Generator, Discriminator
@@ -52,7 +52,7 @@ def main(args):
 
     cat_train = ImageFolder(root=args.data_root, transform=transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize(int(1.15 * args.data_size)),
+        transforms.Resize(int(1.15 * args.data_size), antialias=True),
         transforms.RandomCrop(args.data_size),
     ]))
 
@@ -65,7 +65,7 @@ def main(args):
     G.load_state_dict(weight)
     freeze_model(G)
 
-    vgg_model = vgg16(pretrained=True)
+    vgg_model = vgg16(weights=VGG16_Weights.DEFAULT)
     freeze_model(vgg_model)
 
     domain_optimizer = optim.Adam(domain_encoder.parameters(), lr=args.lr)
