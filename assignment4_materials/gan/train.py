@@ -128,8 +128,8 @@ def train(D, G, D_solver, G_solver, discriminator_loss, generator_loss, gan_type
             iter_count += 1
 
             if (iter_count % save_every == 0):
-              torch.save(G.state_dict(), f'{gan_type}_{iter_count}.pt')
-              torch.save(D.state_dict(), f'{gan_type}_{iter_count}.pt')
+              torch.save(G.state_dict(), f'weights/{gan_type}_{iter_count}.pt')
+              torch.save(D.state_dict(), f'weights/{gan_type}_{iter_count}.pt')
 
 def train_wgan():
   pass
