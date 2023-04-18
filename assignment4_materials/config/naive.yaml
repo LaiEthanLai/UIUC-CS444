@@ -1,10 +1,9 @@
 # learning recipe
 lr: 0.001
-noise_dim: 100
-epoch: 100
+noise_dim: 10
+iter: 100
 batch_size: 32
 l_gp: 10
-optimizer: 'adam'
 
 # others
 device: 'cuda'
