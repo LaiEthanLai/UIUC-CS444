@@ -11,7 +11,7 @@ from gan.losses import w_gan_disloss, w_gan_genloss, compute_gradient_penalty
 from gan.utils import sample_noise
 
 from argparse import ArgumentParser
-from collections import OrderedDict
+
 
 from PIL import Image
 
@@ -23,12 +23,20 @@ class In_domain_encoder(nn.Module):
 
         pass
 
+def freeze_model(model: nn.Module) -> nn.Module:
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    model.eval()
+    
+
 def perceptual(model, real: torch.Tensor, fake: torch.Tensor) -> float:
     '''
     compute the L2 norm between the feature of real images and the feature of fake images
     (the features are from VGG16)
     '''
-    return torch.norm((model(real) - model(fake)), p=2)
+    return nn.functional.mse_loss(model(real), model(fake)) # torch.norm((model(real) - model(fake)), p=2)
 
 def main(args):
     
@@ -52,15 +60,13 @@ def main(args):
     
     domain_encoder = In_domain_encoder(noise_dim=args.noise_dim).to(device)
     D = Discriminator(input_channels=3).to(device)
+
     G = Generator(noise_dim=args.noise_dim).to(device)
-    G.load_state_dict(torch.load(args.weight))
-    G.eval()
-    for param in G.parameters():
-        param.requires_grad = False
+    G.load_state_dict(weight)
+    freeze_model(G)
+
     vgg_model = vgg16(pretrained=True)
-    vgg_model.eval()
-    for param in vgg_model.parameters():
-        param.requires_grad = False
+    freeze_model(vgg_model)
 
     domain_optimizer = optim.Adam(domain_encoder.parameters(), lr=args.lr)
     D_optimizer = optim.Adam(D.parameters(), lr=args.lr)
@@ -79,8 +85,7 @@ def main(args):
             d_error_real.backward()
 
             # fake
-            noise = sample_noise(img.shape[0], dim=args.noise_dim).to(args.device)
-            fake_img = G(domain_encoder(noise))
+            fake_img = G(domain_encoder(img))
             d_error_fake = D(fake_img.detach())
             d_error_fake.backward()
 
@@ -94,7 +99,7 @@ def main(args):
             # update encoder
             domain_optimizer.zero_grad()
 
-            g_error = args.l_genadv * w_gan_genloss(fake_img) + torch.norm((img - fake_img), p=2) + args.l_percep * perceptual(vgg_model, img, fake_img)
+            g_error = args.l_genadv * w_gan_genloss(fake_img) + args.l_percep * perceptual(vgg_model, img, fake_img) + nn.functional.mse_loss(img, fake_img) # torch.norm((img - fake_img), p=2) 
             g_error.backward()
             
             domain_optimizer.step()
