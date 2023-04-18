@@ -12,16 +12,40 @@ from gan.utils import sample_noise
 
 from argparse import ArgumentParser
 
-
+from tqdm import tqdm
 from PIL import Image
+from functools import partial
+from einops.layers.torch import Reduce
+
+conv3x3 = partial(nn.Conv2d, stride=2, kernel_size=3, bias=False)
 
 class In_domain_encoder(nn.Module):
     def __init__(self, noise_dim: int) -> None:
         super().__init__()
+
+        self.enc = nn.Sequential(
+            conv3x3(3, 128),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+            conv3x3(128, 512),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+            conv3x3(512, 1024),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU(0.2),
+            conv3x3(1024, 1024),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU(0.2),
+            conv3x3(1024, 1024),
+            nn.BatchNorm2d(1024),
+            nn.LeakyReLU(0.2),
+            Reduce('b c h w -> b c', 'mean'),
+            nn.Linear(1024, noise_dim)
+        )
     
     def forward(self, x):
 
-        pass
+        return self.enc(x)
 
 def freeze_model(model: nn.Module) -> nn.Module:
 
@@ -41,13 +65,13 @@ def perceptual(model, real: torch.Tensor, fake: torch.Tensor) -> float:
 def main(args):
     
     if args.weight:
-        weight = torch.load(args.weight)
+        weight = torch.load(args.weight, map_location='cpu')
     else:
         print('Plz provide a trained wight!!!')
         raise NotImplementedError
     
     
-    device = args.device if torch.cuda.is_available() and args.device != 'cpu' else 'cpu'
+    device = args.device 
     print(f'train on {device}')
 
     cat_train = ImageFolder(root=args.data_root, transform=transforms.Compose([
@@ -58,11 +82,12 @@ def main(args):
 
     loader = DataLoader(cat_train, batch_size=args.batch_size, drop_last=True)
     
-    domain_encoder = In_domain_encoder(noise_dim=args.noise_dim).to(device)
+    domain_encoder = In_domain_encoder(noise_dim=args.prog_dim).to(device)
     D = Discriminator(input_channels=3).to(device)
 
     G = Generator(noise_dim=args.noise_dim).to(device)
     G.load_state_dict(weight)
+    G.proj = nn.Identity().to(device) # our encoder is trained on the projected space
     freeze_model(G)
 
     vgg_model = vgg16(weights=VGG16_Weights.DEFAULT)
@@ -72,9 +97,9 @@ def main(args):
     D_optimizer = optim.Adam(D.parameters(), lr=args.lr)
     
 
-    for epoch in args.epoch:
+    for epoch in tqdm(range(args.epoch)):
 
-        for img in loader:
+        for img, _ in loader:
             
             img = img.to(args.device)
            
@@ -86,14 +111,14 @@ def main(args):
 
             # fake
             fake_img = G(domain_encoder(img))
-            d_error_fake = D(fake_img.detach())
+            d_error_fake = w_gan_disloss(D(fake_img.detach()), None)
             d_error_fake.backward()
 
             # gradient penalty
             d_error_gp = compute_gradient_penalty(D, img.data, fake_img.data) * args.l_gp
             d_error_gp.backward()
 
-            d_error = d_error_real + d_error_fake + d_error_gp
+            d_error = d_error_real + d_error_fake # + d_error_gp
             D_optimizer.step()
 
             # update encoder
@@ -109,6 +134,7 @@ def main(args):
 def parsing():
     parser = ArgumentParser()
     parser.add_argument('--noise_dim', type=int, default=100)
+    parser.add_argument('--prog_dim', type=int, default=1024)
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=32)
