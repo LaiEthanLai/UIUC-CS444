@@ -1,15 +1,16 @@
 # learning recipe
 lr: 0.001
 noise_dim: 100
+prog_dim: 1024
 iter: 100
-batch_size: 32
-l_percep: 0.3
-l_dom: 0.4
+l_percep: 0.00005
+l_dom: 2
 
 # others
 device: 'cuda'
-save_path: 'inverted_img'
-target_img: 'source.jpg'
-G_weight: 'generator.pt'
-enc_weight: 'encoder.pt'
+save_path: 'results/domain_inverted_img'
+save_target: 'results/target_img'
+target_img: 'cats/all/191.jpg'
+G_weight: 'weights/G_wgan-gp_17000.pt'
+enc_weight: 'weights/domain_enc_GP.pt'
 target_shape: 64

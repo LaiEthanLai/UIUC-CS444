@@ -1,13 +1,12 @@
 # learning recipe
 lr: 0.001
-noise_dim: 10
-iter: 100
-batch_size: 32
-l_gp: 10
+noise_dim: 512
+iter: 1000
 
 # others
 device: 'cuda'
-save_path: 'inverted_img'
-target_img: 'source.jpg'
-target_shape: 64
-G_weight: 'generator.pt'
+save_path: 'results/inverted_12_img'
+save_target: 'results/target_img'
+target_img: 'synthesize/20_avg.jpg'
+target_shape: 512
+G_weight: 'pgan'
