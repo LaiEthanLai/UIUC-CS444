@@ -8,16 +8,16 @@ import torchvision.transforms as transforms
 
 from gan.models import Generator, Discriminator
 from gan.losses import w_gan_disloss, w_gan_genloss, compute_gradient_penalty
-from gan.utils import sample_noise
+from gan.utils import preprocess_img
 
 from argparse import ArgumentParser
 
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from PIL import Image
 from functools import partial
 from einops.layers.torch import Reduce
 
-conv3x3 = partial(nn.Conv2d, stride=2, kernel_size=3, bias=False)
+conv3x3 = partial(nn.Conv2d, stride=2, kernel_size=3, padding=1, bias=False)
 
 class In_domain_encoder(nn.Module):
     def __init__(self, noise_dim: int) -> None:
@@ -34,8 +34,10 @@ class In_domain_encoder(nn.Module):
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2),
             conv3x3(1024, 1024),
+            conv3x3(1024, 1024),
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2),
+            conv3x3(1024, 1024),
             conv3x3(1024, 1024),
             nn.BatchNorm2d(1024),
             nn.LeakyReLU(0.2),
@@ -90,44 +92,50 @@ def main(args):
     G.proj = nn.Identity().to(device) # our encoder is trained on the projected space
     freeze_model(G)
 
-    vgg_model = vgg16(weights=VGG16_Weights.DEFAULT)
+    vgg_model = vgg16(weights=VGG16_Weights.DEFAULT).features[:16].to(device)
     freeze_model(vgg_model)
 
     domain_optimizer = optim.Adam(domain_encoder.parameters(), lr=args.lr)
     D_optimizer = optim.Adam(D.parameters(), lr=args.lr)
     
+    with trange(args.epoch) as pbar:
+        g_error = 0.0
+        for epoch in pbar:
 
-    for epoch in tqdm(range(args.epoch)):
-
-        for img, _ in loader:
+            for idx,(img, _) in enumerate(loader):
+                
+                img = preprocess_img(img)
+                img = img.to(args.device)
             
-            img = img.to(args.device)
-           
-            D_optimizer.zero_grad()
+                D_optimizer.zero_grad()
 
-            # real
-            d_error_real = w_gan_disloss(-D(img), None)
-            d_error_real.backward()
+                # real
+                d_error_real = w_gan_disloss(-D(img), None)
+                d_error_real.backward()
 
-            # fake
-            fake_img = G(domain_encoder(img))
-            d_error_fake = w_gan_disloss(D(fake_img.detach()), None)
-            d_error_fake.backward()
+                # fake
+                fake_img = G(domain_encoder(img))
+                d_error_fake = w_gan_disloss(D(fake_img.detach()), None)
+                d_error_fake.backward()
 
-            # gradient penalty
-            d_error_gp = compute_gradient_penalty(D, img.data, fake_img.data) * args.l_gp
-            d_error_gp.backward()
+                # gradient penalty
+                d_error_gp = compute_gradient_penalty(D, img.data, fake_img.data) * args.l_gp
+                d_error_gp.backward()
 
-            d_error = d_error_real + d_error_fake # + d_error_gp
-            D_optimizer.step()
+                d_error = d_error_real + d_error_fake  + d_error_gp
+                D_optimizer.step()
 
-            # update encoder
-            domain_optimizer.zero_grad()
+                # update encoder
+                if (idx + (epoch * len(loader))) % args.train_every == 0:
+                    domain_optimizer.zero_grad()
 
-            g_error = args.l_genadv * w_gan_genloss(fake_img) + args.l_percep * perceptual(vgg_model, img, fake_img) + nn.functional.mse_loss(img, fake_img) # torch.norm((img - fake_img), p=2) 
-            g_error.backward()
-            
-            domain_optimizer.step()
+                    g_error = args.l_genadv * w_gan_genloss(D(fake_img)) + args.l_percep * perceptual(vgg_model, img, fake_img) + nn.functional.mse_loss(img, fake_img) # torch.norm((img - fake_img), p=2) 
+                    g_error.backward()
+
+                    domain_optimizer.step()
+                
+                if (idx + (epoch * len(loader)))%25 == 0:
+                    pbar.set_description(f'd loss: {d_error.item()}, g_loss: {g_error.item()}')
 
     torch.save(domain_encoder.state_dict(), f'{args.save_path}.pt')
 
@@ -147,6 +155,7 @@ def parsing():
     parser.add_argument('--save_path', type=str, default='domain_encoder')
     parser.add_argument('--data_root', type=str)
     parser.add_argument('--data_size', type=int, default=64)
+    parser.add_argument('--train_every', type=int, default=1)
     
     return parser.parse_args()
 
