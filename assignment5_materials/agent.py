@@ -49,6 +49,7 @@ class Agent():
 
     """Get action using policy net using epsilon-greedy policy"""
     def get_action(self, state):
+        self.policy_net.eval()
         if np.random.rand() <= self.epsilon:
             ### CODE #### 
             # Choose a random action
@@ -59,6 +60,7 @@ class Agent():
             state = torch.from_numpy(state).to(device)
             act = self.policy_net(state)
             act = act.argmax(dim=1)
+        self.policy_net.train()
         return act
 
     # pick samples randomly from replay memory (with batch_size)
@@ -83,7 +85,7 @@ class Agent():
 
         # Compute Q(s_t, a), the Q-value of the current state
         ### CODE ####
-        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None])
+        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None]).squeeze(1)
         # Compute Q function of next state
         # Find maximum Q-value of action at next state from policy net
         ### CODE ####

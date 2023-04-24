@@ -51,7 +51,7 @@ class Agent():
         self.freeze_net(self.target_net)
 
     def freeze_net(self, net: nn.Module):
-        for param in net: 
+        for param in net.parameters(): 
             param.requires_grad = False
 
     def load_policy_net(self, path):
@@ -87,18 +87,19 @@ class Agent():
 
         history = np.stack(mini_batch[0], axis=0)
         states = np.float32(history[:, :4, :, :]) / 255.
-        states = torch.from_numpy(states).cuda()
+        states = torch.from_numpy(states).to(device)
         actions = list(mini_batch[1])
-        actions = torch.LongTensor(actions).cuda()
+        actions = torch.LongTensor(actions).to(device)
         rewards = list(mini_batch[2])
-        rewards = torch.FloatTensor(rewards).cuda()
+        rewards = torch.FloatTensor(rewards).to(device)
         next_states = np.float32(history[:, 1:, :, :]) / 255.
+        next_states = torch.from_numpy(next_states).to(device)
         dones = mini_batch[3] # checks if the game is over
         mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
         
         # Your agent.py code here with double DQN modifications
         ### CODE ###
-        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None])
+        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None]).squeeze(1)
         # Compute Q function of next state
         # Find maximum Q-value of action at next state from policy net
         ### CODE ####
@@ -108,8 +109,8 @@ class Agent():
         # Compute the Huber Loss
         ### CODE ####
         criterion = nn.SmoothL1Loss()
-        # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
-        loss = criterion((rewards + q_s_t_next * self.discount_factor), s_t_a)
+        print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
+        loss = criterion(rewards + q_s_t_next * self.discount_factor, s_t_a)
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####
