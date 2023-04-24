@@ -56,6 +56,7 @@ class Agent():
         else:
             ### CODE ####
             # Choose the best action
+            state = torch.from_numpy(state).to(device)
             act = self.policy_net(state)
             act = act.argmax(dim=1)
         return act
@@ -75,22 +76,24 @@ class Agent():
         rewards = list(mini_batch[2])
         rewards = torch.FloatTensor(rewards).to(device)
         next_states = np.float32(history[:, 1:, :, :]) / 255.
+        next_states = torch.from_numpy(next_states).to(device)
         dones = mini_batch[3] # checks if the game is over
-        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
+        mask = torch.tensor(list(map(int, dones==False)),dtype=bool)
 
 
         # Compute Q(s_t, a), the Q-value of the current state
         ### CODE ####
-        s_t_a = self.policy_net(states)[actions]
+        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None])
         # Compute Q function of next state
         # Find maximum Q-value of action at next state from policy net
         ### CODE ####
         q_s_t_next = torch.empty(batch_size, device=device)
         with torch.no_grad():
-            q_s_t_next[mask] = self.policy_net(next_states).max(dim=1)
+            q_s_t_next[mask] = self.policy_net(next_states)[mask].max(dim=1)[0]
         # Compute the Huber Loss
         ### CODE ####
         criterion = nn.SmoothL1Loss()
+        # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
         loss = criterion((rewards + q_s_t_next * self.discount_factor), s_t_a)
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
