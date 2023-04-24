@@ -11,6 +11,7 @@ from model import DQN
 from utils import find_max_lives, check_live, get_frame, get_init_state
 from config import *
 import os
+from copy import deepcopy
 
 device = 'cpu'
 if torch.backends.mps.is_available() and torch.backends.mps.is_built():
@@ -31,6 +32,7 @@ class Agent():
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
+        self.tau = 0.01
 
         # Generate the memory
         self.memory = ReplayMemory()
@@ -44,7 +46,13 @@ class Agent():
 
         # Initialize a target network and initialize the target network to the policy net
         ### CODE ###
+        self.target_net = deepcopy(self.policy_net).to(device)
+        self.target_net.eval()
+        self.freeze_net(self.target_net)
 
+    def freeze_net(self, net: nn.Module):
+        for param in net: 
+            param.requires_grad = False
 
     def load_policy_net(self, path):
         self.policy_net = torch.load(path)           
@@ -52,17 +60,22 @@ class Agent():
     # after some time interval update the target net to be same with policy net
     def update_target_net(self):
         ### CODE ###
-
+        for param_target, param_policy in zip(self.target_net.parameters(), self.policy_net.parameters()):
+            param_target = param_target + self.tau * (param_policy - param_target)
 
     """Get action using policy net using epsilon-greedy policy"""
     def get_action(self, state):
         if np.random.rand() <= self.epsilon:
-            ### CODE #### (copy over from agent.py!)
-
+            ### CODE #### 
+            # Choose a random action
+            act = random.choice([0, 1, 2])
         else:
-            ### CODE #### (copy over from agent.py!)
-
-        return a
+            ### CODE ####
+            # Choose the best action
+            state = torch.from_numpy(state).to(device)
+            act = self.policy_net(state)
+            act = act.argmax(dim=1)
+        return act
 
     # pick samples randomly from replay memory (with batch_size)
     def train_policy_net(self, frame):
@@ -81,9 +94,26 @@ class Agent():
         rewards = torch.FloatTensor(rewards).cuda()
         next_states = np.float32(history[:, 1:, :, :]) / 255.
         dones = mini_batch[3] # checks if the game is over
-        musk = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
+        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
         
         # Your agent.py code here with double DQN modifications
         ### CODE ###
-     
+        s_t_a = self.policy_net(states).gather(dim=1, index=actions[:, None])
+        # Compute Q function of next state
+        # Find maximum Q-value of action at next state from policy net
+        ### CODE ####
+        q_s_t_next = torch.empty(batch_size, device=device)
+        with torch.no_grad():
+            q_s_t_next[mask] = self.target_net(next_states)[mask].max(dim=1)[0]
+        # Compute the Huber Loss
+        ### CODE ####
+        criterion = nn.SmoothL1Loss()
+        # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
+        loss = criterion((rewards + q_s_t_next * self.discount_factor), s_t_a)
+        # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
+        # Optimize the model, .step() both the optimizer and the scheduler!
+        ### CODE ####
+        loss.backward()
+        self.optimizer.step()
+        self.scheduler.step()
         
