@@ -5,7 +5,7 @@ from config import *
 
 def find_max_lives(env):
     env.reset()
-    _, _, _, info = env.step(0)
+    _, _, _, _, info = env.step(0)
     return info['lives']
 
 def check_live(life, cur_life):
@@ -15,7 +15,7 @@ def check_live(life, cur_life):
         return False
 
 def get_frame(X):
-    x = np.uint8(resize(rgb2gray(X), (HEIGHT, WIDTH), mode='reflect') * 255)
+    x = np.uint8(resize(rgb2gray(X[0]), (HEIGHT, WIDTH), mode='reflect') * 255)
     return x
 
 def get_init_state(history, s, history_size):

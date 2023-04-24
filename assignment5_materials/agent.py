@@ -12,10 +12,17 @@ from utils import find_max_lives, check_live, get_frame, get_init_state
 from config import *
 import os
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    device = 'mps'
+if torch.cuda.is_available():
+    device = 'cuda'
 
 class Agent():
     def __init__(self, action_size):
+
+        print(f'training on {device}')
+
         self.action_size = action_size
 
         # These are hyper parameters for the DQN
@@ -45,12 +52,13 @@ class Agent():
         if np.random.rand() <= self.epsilon:
             ### CODE #### 
             # Choose a random action
-            pass
+            act = random.choice([0, 1, 2])
         else:
             ### CODE ####
             # Choose the best action
-            pass
-        return a
+            act = self.policy_net(state)
+            act = act.argmax(dim=1)
+        return act
 
     # pick samples randomly from replay memory (with batch_size)
     def train_policy_net(self, frame):
@@ -58,15 +66,14 @@ class Agent():
             self.epsilon -= self.epsilon_decay
 
         mini_batch = self.memory.sample_mini_batch(frame)
-        mini_batch = np.array(mini_batch).transpose()
-
+        mini_batch = np.array(mini_batch, object).transpose()
         history = np.stack(mini_batch[0], axis=0)
         states = np.float32(history[:, :4, :, :]) / 255.
-        states = torch.from_numpy(states).cuda()
+        states = torch.from_numpy(states).to(device)
         actions = list(mini_batch[1])
-        actions = torch.LongTensor(actions).cuda()
+        actions = torch.LongTensor(actions).to(device)
         rewards = list(mini_batch[2])
-        rewards = torch.FloatTensor(rewards).cuda()
+        rewards = torch.FloatTensor(rewards).to(device)
         next_states = np.float32(history[:, 1:, :, :]) / 255.
         dones = mini_batch[3] # checks if the game is over
         mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
@@ -74,16 +81,20 @@ class Agent():
 
         # Compute Q(s_t, a), the Q-value of the current state
         ### CODE ####
-
+        s_t_a = self.policy_net(states)[actions]
         # Compute Q function of next state
-        ### CODE ####
-
         # Find maximum Q-value of action at next state from policy net
         ### CODE ####
-
+        q_s_t_next = torch.empty(batch_size, device=device)
+        with torch.no_grad():
+            q_s_t_next[mask] = self.policy_net(next_states).max(dim=1)
         # Compute the Huber Loss
         ### CODE ####
-
+        criterion = nn.SmoothL1Loss()
+        loss = criterion((rewards + q_s_t_next * self.discount_factor), s_t_a)
+        # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####
-
+        loss.backward()
+        self.optimizer.step()
+        self.scheduler.step()

@@ -12,7 +12,12 @@ from utils import find_max_lives, check_live, get_frame, get_init_state
 from config import *
 import os
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
+if torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    device = 'mps'
+if torch.cuda.is_available():
+    device = 'cuda'
+
 
 class Agent():
     def __init__(self, action_size):
@@ -65,7 +70,7 @@ class Agent():
             self.epsilon -= self.epsilon_decay
 
         mini_batch = self.memory.sample_mini_batch(frame)
-        mini_batch = np.array(mini_batch).transpose()
+        mini_batch = np.array(mini_batch, dtype=object).transpose()
 
         history = np.stack(mini_batch[0], axis=0)
         states = np.float32(history[:, :4, :, :]) / 255.
