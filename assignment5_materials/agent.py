@@ -58,7 +58,7 @@ class Agent():
             ### CODE ####
             # Choose the best action
             state = torch.from_numpy(state).to(device)[None, :]
-            act = self.policy_net(state)
+            act = self.policy_net(state).detach().cpu()
             act = act.argmax(dim=1)
         self.policy_net.train()
         return act

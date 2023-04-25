@@ -23,11 +23,13 @@ class ReplayMemory(object):
 
         idx_sample = random.sample(range(sample_range), batch_size)
         for i in idx_sample:
-            sample = []
+            hists = []
+            act_rew_done = []
             for j in range(HISTORY_SIZE + 1):
-                sample.append(self.memory[i + j])
-            sample = np.array(sample, dtype=object)
-            mini_batch.append((np.stack(sample[:, 0], axis=0), sample[3, 1], sample[3, 2], sample[3, 3]))
+                hists.append(self.memory[i + j][0])
+                act_rew_done.append(self.memory[i + j][1:])
+            # sample = np.array(sample, dtype=object)
+            mini_batch.append((np.stack(hists, axis=0), act_rew_done[3][0], act_rew_done[3][1], act_rew_done[3][2]))
             # torch.cat([previous 3 states, current states]) -> Q value, and we needn to compute Q of next state" need 5 states
         return mini_batch
 
