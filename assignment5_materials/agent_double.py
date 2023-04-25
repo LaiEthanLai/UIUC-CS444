@@ -109,7 +109,7 @@ class Agent():
         # Compute the Huber Loss
         ### CODE ####
         criterion = nn.SmoothL1Loss()
-        print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
+        # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
         loss = criterion(rewards + q_s_t_next * self.discount_factor, s_t_a)
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
