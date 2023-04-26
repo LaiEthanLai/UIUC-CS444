@@ -104,5 +104,5 @@ class Agent():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters())
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.scheduler.step()
