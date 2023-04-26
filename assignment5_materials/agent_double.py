@@ -32,7 +32,7 @@ class Agent():
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
-        self.tau = 0.01
+        self.tau = 0.005
 
         # Generate the memory
         self.memory = ReplayMemory()
@@ -65,6 +65,7 @@ class Agent():
 
     """Get action using policy net using epsilon-greedy policy"""
     def get_action(self, state):
+        self.policy_net.eval()
         if np.random.rand() <= self.epsilon:
             ### CODE #### 
             # Choose a random action
@@ -73,8 +74,10 @@ class Agent():
             ### CODE ####
             # Choose the best action
             state = torch.from_numpy(state).to(device)[None, :]
-            act = self.policy_net(state).detach().cpu()
+            with torch.no_grad():
+                act = self.policy_net(state).cpu()
             act = act.argmax(dim=1)
+        self.policy_net.train()
         return act
 
     # pick samples randomly from replay memory (with batch_size)
@@ -114,7 +117,9 @@ class Agent():
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters())
         self.scheduler.step()
         

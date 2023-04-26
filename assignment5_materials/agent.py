@@ -58,7 +58,8 @@ class Agent():
             ### CODE ####
             # Choose the best action
             state = torch.from_numpy(state).to(device)[None, :]
-            act = self.policy_net(state).detach().cpu()
+            with torch.no_grad():
+                act = self.policy_net(state).cpu()
             act = act.argmax(dim=1)
         self.policy_net.train()
         return act
@@ -100,6 +101,8 @@ class Agent():
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters())
         self.scheduler.step()
