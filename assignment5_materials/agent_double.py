@@ -46,8 +46,10 @@ class Agent():
 
         # Initialize a target network and initialize the target network to the policy net
         ### CODE ###
-        self.target_net = deepcopy(self.policy_net).to(device)
+        self.target_net = DQN(action_size)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
+        self.target_net.to(device)
         self.freeze_net(self.target_net)
 
     def freeze_net(self, net: nn.Module):
@@ -61,7 +63,7 @@ class Agent():
     def update_target_net(self):
         ### CODE ###
         for param_target, param_policy in zip(self.target_net.parameters(), self.policy_net.parameters()):
-            param_target = param_target + self.tau * (param_policy - param_target)
+            param_target.data.copy_(param_target + self.tau * (param_policy - param_target))
 
     """Get action using policy net using epsilon-greedy policy"""
     def get_action(self, state):
@@ -98,7 +100,7 @@ class Agent():
         next_states = np.float32(history[:, 1:, :, :]) / 255.
         next_states = torch.from_numpy(next_states).to(device)
         dones = mini_batch[3] # checks if the game is over
-        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
+        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8, device=device)
         
         # Your agent.py code here with double DQN modifications
         ### CODE ###
@@ -106,9 +108,12 @@ class Agent():
         # Compute Q function of next state
         # Find maximum Q-value of action at next state from policy net
         ### CODE ####
-        q_s_t_next = torch.empty(batch_size, device=device)
-        with torch.no_grad():
-            q_s_t_next[mask] = self.target_net(next_states)[mask].max(dim=1)[0]
+        # q_s_t_next = torch.empty(batch_size, device=device)
+        # with torch.no_grad():
+        #     q_s_t_next[mask] = self.target_net(next_states)[mask].max(dim=1)[0]
+
+        q_s_t_next = self.target_net(next_states).gather(dim=1, index=self.policy_net(next_states).detach().argmax(dim=1)[:, None])
+        q_s_t_next = q_s_t_next * mask
         # Compute the Huber Loss
         ### CODE ####
         criterion = nn.SmoothL1Loss()
