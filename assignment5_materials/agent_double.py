@@ -116,7 +116,7 @@ class Agent():
         q_s_t_next = q_s_t_next * mask
         # Compute the Huber Loss
         ### CODE ####
-        criterion = nn.SmoothL1Loss()
+        criterion = nn.MSELoss()
         # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
         loss = criterion(rewards + q_s_t_next * self.discount_factor, s_t_a)
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
@@ -125,6 +125,6 @@ class Agent():
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        # torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.scheduler.step()
         
