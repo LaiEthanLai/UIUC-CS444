@@ -5,7 +5,9 @@ __pycache__/
 **/.DS_Store
 # C extensions
 *.so
-
+*.csv
+*.txt
+*.png
 # Distribution / packaging
 .Python
 build/
@@ -129,8 +131,9 @@ dmypy.json
 .pyre/
 
 # data type
-.jpg
-.zip
+*.jpeg
+*.jpg
+*.zip
 .gz
 cats/
 MNIST_data/

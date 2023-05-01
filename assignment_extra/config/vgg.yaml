@@ -1,0 +1,23 @@
+method: 'all'
+
+# data
+root: 'imagenette2/val'
+workers: 0
+save_samples: 10
+save_sample_root: 'imgs'
+save_fig_root: 'figs'
+
+# training
+model: 'vgg'
+criterion: 'cross_entropy'
+device: 'mps'
+eps: 
+  - 0
+  - 2.
+  - 3.
+  - 4.
+  - 8.
+  - 24.
+  - 32.
+  - 64.
+  - 128.
