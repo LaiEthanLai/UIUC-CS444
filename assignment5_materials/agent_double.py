@@ -28,7 +28,7 @@ class Agent():
         self.discount_factor = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.explore_step = 1000000
+        self.explore_step = 500000
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
@@ -112,13 +112,11 @@ class Agent():
         # with torch.no_grad():
         #     q_s_t_next[mask] = self.target_net(next_states)[mask].max(dim=1)[0]
 
-        q_s_t_next = self.target_net(next_states).gather(dim=1, index=self.policy_net(next_states).detach().argmax(dim=1)[:, None])
+        q_s_t_next = self.target_net(next_states).gather(dim=1, index=self.policy_net(next_states).argmax(dim=1)[:, None])
         q_s_t_next = q_s_t_next * mask
         # Compute the Huber Loss
         ### CODE ####
-        criterion = nn.MSELoss()
-        # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
-        loss = criterion(rewards + q_s_t_next * self.discount_factor, s_t_a)
+        loss = torch.mean(((rewards + q_s_t_next * self.discount_factor).detach() - s_t_a) ** 2) 
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####

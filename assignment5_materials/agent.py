@@ -29,36 +29,25 @@ class Agent():
         self.discount_factor = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.explore_step = 1000000
+        self.explore_step = 500000
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
-        self.tau = 0.005
 
         # Generate the memory
         self.memory = ReplayMemory()
 
         # Create the policy net
         self.policy_net = DQN(action_size)
+        self.target_net = DQN(action_size)
         self.policy_net.to(device)
+        self.target_net.to(device)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.optimizer = optim.Adam(params=self.policy_net.parameters(), lr=learning_rate)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma)
 
-        # self.target_net = DQN(action_size)
-        # self.target_net.load_state_dict(self.policy_net.state_dict())
-        # self.target_net.eval()
-        # self.target_net.to(device)
-        # self.freeze_net(self.target_net)
-
-    def freeze_net(self, net: nn.Module):
-        for param in net.parameters(): 
-            param.requires_grad = False
-
-    # def update_target_net(self):
-    #     ### CODE ###
-    #     for param_target, param_policy in zip(self.target_net.parameters(), self.policy_net.parameters()):
-    #         param_target.data.copy_(param_target + self.tau * (param_policy - param_target))
+        self.train_cnt = 0        
 
     def load_policy_net(self, path):
         self.policy_net = torch.load(path)
@@ -85,6 +74,8 @@ class Agent():
         if self.epsilon > self.epsilon_min:
             self.epsilon -= self.epsilon_decay
 
+        self.train_cnt += 1
+
         mini_batch = self.memory.sample_mini_batch(frame)
         mini_batch = np.array(mini_batch, object).transpose()
         history = np.stack(mini_batch[0], axis=0)
@@ -108,12 +99,12 @@ class Agent():
         ### CODE ####
         q_s_t_next = torch.zeros(batch_size, device=device)
         with torch.no_grad():
-            q_s_t_next[mask] = self.policy_net(next_states)[mask].max(dim=1)[0]
+            q_s_t_next[mask] = self.target_net(next_states)[mask].max(dim=1)[0]
         # Compute the Huber Loss
         ### CODE ####
-        criterion = nn.MSELoss()
+        
         # print(q_s_t_next.shape, rewards.shape, s_t_a.shape)
-        loss = criterion((rewards + q_s_t_next * self.discount_factor), s_t_a)
+        loss = torch.mean(((rewards + q_s_t_next * self.discount_factor) - s_t_a) ** 2) 
         # only times discount factor once cuz r_t' where t' is already discounted by discount^(t' - t - 1)
         # Optimize the model, .step() both the optimizer and the scheduler!
         ### CODE ####
@@ -123,4 +114,5 @@ class Agent():
         # torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.scheduler.step()
 
-        # self.update_target_net()
+        if (self.train_cnt + 1) % self.update_target == 0:
+            self.target_net.load_state_dict(self.target_net.state_dict())
