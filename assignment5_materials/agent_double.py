@@ -28,7 +28,7 @@ class Agent():
         self.discount_factor = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.explore_step = 500000
+        self.explore_step = 1000000
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
@@ -50,7 +50,7 @@ class Agent():
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
         self.target_net.to(device)
-        self.freeze_net(self.target_net)
+        # self.freeze_net(self.target_net)
 
     def freeze_net(self, net: nn.Module):
         for param in net.parameters(): 

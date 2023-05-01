@@ -29,7 +29,7 @@ class Agent():
         self.discount_factor = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.explore_step = 500000
+        self.explore_step = 1000000
         self.epsilon_decay = (self.epsilon - self.epsilon_min) / self.explore_step
         self.train_start = 100000
         self.update_target = 1000
