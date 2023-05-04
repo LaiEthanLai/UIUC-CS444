@@ -1,7 +1,7 @@
 model: 'resnet34'
 scratch: False
-root_train: imagenette_c/train
-root_val: imagenette_c/val
+root_train: 'imagenette_c/train'
+root_val: 'imagenette_c/val'
 batch_size: 32
 workers: 0
 criterion: 'cross_entropy'
