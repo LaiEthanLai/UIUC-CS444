@@ -27,21 +27,36 @@ def build_dataset(root: str, transform=None) -> Dataset:
     return ImageFolder(root=root, transform=transform()) if transform is not None \
            else ImageFolder(root=root, transform=trans)
 
-def prepare_model(type: str):
+def prepare_model(type: str, from_scratch: bool=False):
+    
+    pretrained = {
+        'resnet18'  :  ResNet18_Weights.DEFAULT,
+        'resnet34'  :  ResNet34_Weights.DEFAULT,
+        'resnet50'  :  ResNet50_Weights.DEFAULT,
+        'resnet101' :  ResNet101_Weights.DEFAULT,
+        'inception' :  Inception_V3_Weights.DEFAULT,
+        'vit'       :  ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1,
+        'vgg'       :  VGG19_BN_Weights.DEFAULT
+    }
+
+    weight = None
+    if not from_scratch:
+        weight = pretrained[type]
+
     if type == 'resnet18':
-        return resnet18(weights=ResNet18_Weights.DEFAULT), ResNet18_Weights.IMAGENET1K_V1.transforms
+        return resnet18(weights=weight), ResNet18_Weights.IMAGENET1K_V1.transforms
     elif type == 'resnet34':
-        return resnet34(weights=ResNet34_Weights.DEFAULT), ResNet34_Weights.IMAGENET1K_V1.transforms
+        return resnet34(weights=weight), ResNet34_Weights.IMAGENET1K_V1.transforms
     elif type == 'resnet50':
-        return resnet50(weights=ResNet50_Weights.DEFAULT), ResNet50_Weights.IMAGENET1K_V2.transforms # for resnet50 and resnet101, V2 is default
+        return resnet50(weights=weight), ResNet50_Weights.IMAGENET1K_V2.transforms # for resnet50 and resnet101, V2 is default
     elif type == 'resnet101':
-        return resnet101(weights=ResNet101_Weights.DEFAULT), ResNet101_Weights.IMAGENET1K_V2.transforms
+        return resnet101(weights=weight), ResNet101_Weights.IMAGENET1K_V2.transforms
     elif type == 'inception':
-        return inception_v3(weights=Inception_V3_Weights.DEFAULT), Inception_V3_Weights.IMAGENET1K_V1.transforms
+        return inception_v3(weights=weight), Inception_V3_Weights.IMAGENET1K_V1.transforms
     elif type == 'vit':
-        return vit_b_16(weights=ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1), ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1.transforms
+        return vit_b_16(weights=weight), ViT_B_16_Weights.IMAGENET1K_SWAG_E2E_V1.transforms
     elif type == 'vgg':
-        return vgg19_bn(weights=VGG19_BN_Weights.DEFAULT), VGG19_BN_Weights.IMAGENET1K_V1.transforms
+        return vgg19_bn(weights=weight), VGG19_BN_Weights.IMAGENET1K_V1.transforms
     else:
         print('No such method being implemented')
         raise NotImplementedError

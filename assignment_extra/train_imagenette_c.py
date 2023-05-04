@@ -1,0 +1,71 @@
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+import yaml
+from argparse import ArgumentParser
+from tqdm import tqdm
+from utils import *
+
+def main(args):
+    
+    with open(args.config, 'r') as f:
+        configs = yaml.load(f, yaml.FullLoader)
+
+    # prepare required stuff
+    model, transform = prepare_model(configs['model'], from_scratch=configs['scratch'])
+    train_dataset = build_dataset(configs['root_train'], transform)
+    val_dataset = build_dataset(configs['root_val'], transform)
+    loader = DataLoader(train_dataset, batch_size=configs['batch_size'], shuffle=True, num_workers=configs['workers'])
+    val_loader = DataLoader(val_dataset, batch_size=configs['batch_size'], shuffle=False, num_workers=configs['workers'])
+    criterion = prepare_loss(configs['criterion'])
+    device = configs['device']
+    optimizer = optim.AdamW(model.parameters(), lr=configs['lr'])
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, (configs['epoch'] // 3), T_mult=1, eta_min=0)
+
+    for epoch in range(configs['epoch']):
+        with tqdm(loader) as t:
+            correct = 0.0
+            total = 0.0
+            acc = 0.0
+            for (img, label) in t:
+                
+                optimizer.zero_grad()
+                output = model(img.to(device))
+                loss = criterion(output, label.to(device))
+                loss.backward()
+
+                total += img.shape[0]
+                correct += torch.sum(output.argmax(1) == label)
+
+                optimizer.step()
+                scheduler.step()
+
+        acc = correct / total
+        t.set_postfix_str(f'loss: {loss.item}, train_acc: {acc}')
+
+        with tqdm(val_loader) as t_val:
+            val_correct = 0.0
+            val_total = 0.0
+            val_acc = 0.0
+            for (img, label) in t_val:
+                with torch.no_grad():
+                    output = model(img.to(device))
+                    loss = criterion(output, label.to(device))
+                val_total += img.shape[0]
+                val_correct += torch.sum(output.argmax(1) == label)
+
+        val_acc = val_correct / val_total
+        t.set_postfix_str(f'loss: {loss.item}, val_acc: {val_acc}')
+
+
+
+def parsing():
+
+    parser = ArgumentParser()
+    parser.add_argument('--config', type=str, default='config/imagnette_c.yaml')
+    
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    main(parsing())
