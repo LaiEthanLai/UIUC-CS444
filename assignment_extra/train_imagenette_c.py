@@ -19,14 +19,17 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=configs['batch_size'], shuffle=False, num_workers=configs['workers'])
     criterion = prepare_loss(configs['criterion'])
     device = configs['device']
+    model.to(device)
     optimizer = optim.AdamW(model.parameters(), lr=configs['lr'])
-    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, (configs['epoch'] // 3), T_mult=1, eta_min=0)
+    t0 = configs['epoch'] if not configs['scratch'] else configs['epoch'] // 3
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, t0, T_mult=1, eta_min=0)
 
     for epoch in range(configs['epoch']):
         with tqdm(loader) as t:
             correct = 0.0
             total = 0.0
             acc = 0.0
+            model.train()
             for (img, label) in t:
                 
                 optimizer.zero_grad()
@@ -35,27 +38,28 @@ def main(args):
                 loss.backward()
 
                 total += img.shape[0]
-                correct += torch.sum(output.argmax(1) == label)
+                correct += sum(output.detach().cpu().argmax(1) == label)
 
                 optimizer.step()
                 scheduler.step()
 
         acc = correct / total
-        t.set_postfix_str(f'loss: {loss.item}, train_acc: {acc}')
+        print(f'{epoch+1} / {configs["epoch"]}, loss: {loss.item()}, train_acc: {acc}')
 
         with tqdm(val_loader) as t_val:
             val_correct = 0.0
             val_total = 0.0
             val_acc = 0.0
             for (img, label) in t_val:
+                model.eval()
                 with torch.no_grad():
                     output = model(img.to(device))
                     loss = criterion(output, label.to(device))
                 val_total += img.shape[0]
-                val_correct += torch.sum(output.argmax(1) == label)
+                val_correct += sum(output.detach().cpu().argmax(1) == label)
 
         val_acc = val_correct / val_total
-        t.set_postfix_str(f'loss: {loss.item}, val_acc: {val_acc}')
+        print(f'loss: {loss.item()}, val_acc: {val_acc}')
 
 
 
