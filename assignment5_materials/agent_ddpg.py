@@ -84,19 +84,21 @@ class Agent():
     def train_policy_net(self, frame):
 
         mini_batch = self.memory.sample_mini_batch(frame)
-        mini_batch = np.array(mini_batch).transpose()
+        mini_batch = np.array(mini_batch, object).transpose()
 
         history = np.stack(mini_batch[0], axis=0)
         states = np.float32(history[:, :4, :, :]) / 255.
-        states = torch.from_numpy(states).cuda()
+        states = torch.from_numpy(states).to(device)
+        
         actions = list(mini_batch[1])
-        actions = torch.LongTensor(actions).cuda()
+        actions = torch.cat(actions).to(device)
         rewards = list(mini_batch[2])
-        rewards = torch.FloatTensor(rewards).cuda()
-        next_states = np.float32(history[:, 1:, :, :]) / 255.
+        rewards = torch.FloatTensor(rewards).to(device)
+        next_states = torch.from_numpy(np.float32(history[:, 1:, :, :]))/ 255.
+        next_states = next_states.to(device)
         dones = mini_batch[3] # checks if the game is over
-        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8)
-
+        mask = torch.tensor(list(map(int, dones==False)),dtype=torch.uint8).to(device)
+        
         target= self.target_critic(next_states, self.target_actor(states).detach()).squeeze() * self.discount_factor * mask + rewards
         criterion = nn.SmoothL1Loss()
 
