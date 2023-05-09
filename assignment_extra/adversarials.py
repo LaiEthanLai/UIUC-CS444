@@ -1,12 +1,15 @@
 import torch
 from torch.utils.data import DataLoader
 from torchvision.transforms import Normalize
+from torchvision.transforms.functional import gaussian_blur
 from torchvision.utils import save_image
+
 from tqdm import trange, tqdm
 from pathlib import Path
 from pickle import load
 import matplotlib.pyplot as plt
 from imagenet import dic
+from einops import rearrange
 
 
 class adversarial():
@@ -36,8 +39,8 @@ class adversarial():
         self.mean = torch.tensor([0.485, 0.456, 0.406], device=device)
         self.std = torch.tensor([0.229, 0.224, 0.225], device=device)
         self.norm = Normalize(mean=self.mean, std=self.std)
-        self.mean = self.mean.reshape(1, 3, 1, 1)
-        self.std = self.std.reshape(1, 3, 1, 1)
+        self.mean = rearrange(self.mean, '(a b c d) -> a b c d', a=1, b=3, c=1, d=1)
+        self.std = rearrange(self.std, '(a b c d) -> a b c d', a=1, b=3, c=1, d=1)
         
     
     def find_adversarial(self):
@@ -89,12 +92,13 @@ class adversarial():
 
 
 class Attacker(adversarial):
-    def __init__(self, device, loader, model, criterion, epsilons, save_samples, img_path=None, iterative=False, least=False) -> None:
+    def __init__(self, device, loader, model, criterion, epsilons, save_samples, img_path=None, iterative=False, least=False, process_perturbed=False) -> None:
         super().__init__(device, loader, model, criterion, epsilons, save_samples, img_path)
 
         self.iterative = iterative
         self.least = least
         self.count_correct = True
+        self.process_perturbed = process_perturbed
 
     def find_adversarial(self):
        
@@ -140,12 +144,14 @@ class Attacker(adversarial):
 
                     loss = 0
                     original_img = img.detach()
-                    for _ in range(repeat):
+                    for i in range(repeat):
                         # if self.epsilons[eps] != 0: print('---', label, '---')
                         loss = self.criterion(output, least_label) if self.least else self.criterion(output, label)
                         loss.backward()
                         img = self.attack(self.epsilons[eps], img.detach(), original_img, torch.sign(img.grad.detach()), self.least, self.iterative)
                         img.requires_grad = True
+                        if i == repeat - 1 and self.process_perturbed:
+                            img = gaussian_blur(img, kernel_size=3, sigma=0.1)
                         output = self.model(img)
 
                     prediction = output.argmax(dim=1)

@@ -23,19 +23,21 @@ def main(args):
     if configs['method'] == 'FGSM':
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'])
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], process_perturbed=configs['process_perturbed'])
         result = attacker.find_adversarial()
         plot_result(configs['save_fig_root'], 'FGSM', result, configs['eps'], model.name)
     elif configs['method'] == 'iter':
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], iterative=True)
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], 
+                        iterative=True, process_perturbed=configs['process_perturbed'])
         result = attacker.find_adversarial()
         plot_result(configs['save_fig_root'], 'iter', result, configs['eps'], model.name)
     elif configs['method'] == 'least':
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], iterative=True, least=True)
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], 
+                        iterative=True, least=True, process_perturbed=configs['process_perturbed'])
         result = attacker.find_adversarial()
         plot_result(configs['save_fig_root'], 'least', result, configs['eps'], model.name)
     elif configs['method'] == 'all':
@@ -43,19 +45,21 @@ def main(args):
         top5_results = []
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'])
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], process_perturbed=configs['process_perturbed'])
         top, top5 = attacker.find_adversarial()
         results.append(top)
         top5_results.append(top5)
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], iterative=True)
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], 
+                        iterative=True, process_perturbed=configs['process_perturbed'])
         top, top5 = attacker.find_adversarial()
         results.append(top)
         top5_results.append(top5)
         attacker = Attacker(device=configs['device'], loader=loader, 
                         model=model, criterion=criterion, epsilons=configs['eps'], 
-                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], iterative=True, least=True)
+                        save_samples=configs['save_samples'], img_path=configs['save_sample_root'], 
+                        iterative=True, least=True, process_perturbed=configs['process_perturbed'])
         top, top5 = attacker.find_adversarial()
         results.append(top)
         top5_results.append(top5)
