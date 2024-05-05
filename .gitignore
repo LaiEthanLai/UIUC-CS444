@@ -134,7 +134,7 @@ dmypy.json
 *.jpeg
 *.jpg
 *.zip
-.gz
+*.gz
 cats/
 MNIST_data/
 Abstract_gallery/
