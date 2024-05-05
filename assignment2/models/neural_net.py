@@ -96,6 +96,14 @@ class NeuralNetwork:
         # TODO: implement me
         return np.where(X > 0, 1, 0)
 
+    def leaky_relu(self, X: np.ndarray, slope: float = 0.01) -> np.ndarray: 
+
+        return np.where(X > 0, X, slope * X)
+
+    def leaky_relu_grad(self, X: np.ndarray, slope: float = 0.01) -> np.ndarray: 
+
+        return np.where(X > 0, 1, slope)
+
     def sigmoid(self, x: np.ndarray) -> np.ndarray:
       # TODO ensure that this is numerically stable
       return np.piecewise(x, [x > 0], [lambda i: 1 / (1 + np.exp(-i)), lambda i: np.exp(i) / (1 + np.exp(i))])
@@ -107,7 +115,7 @@ class NeuralNetwork:
 
     def mse(self, y: np.ndarray, p: np.ndarray) -> np.ndarray:
       # TODO implement this
-      return np.mean((y-p)**2)
+      return np.mean(((y-p)**2))
 
     def forward(self, X: np.ndarray) -> np.ndarray:
         """Compute the outputs for all of the data samples.
@@ -130,7 +138,7 @@ class NeuralNetwork:
             
             X = np.dot(X, self.params[f'W{i}']) + self.params[f'b{i}']
             self.outputs[f'linear_{i}'] = X
-            X = self.relu(X) if i != self.num_layers else self.sigmoid(X)
+            X = self.leaky_relu(X) if i != self.num_layers else self.sigmoid(X)
             self.outputs[f'act_{i}'] = X
 
         return X
@@ -153,7 +161,7 @@ class NeuralNetwork:
         back = -2*(y - self.outputs[f'act_{self.num_layers}']) / 3
         for i in range(self.num_layers, 0, -1):
 
-            c_z = back * self.relu_grad(self.outputs[f'linear_{i}']) if i != self.num_layers else back * self.sigmoid_grad(self.outputs[f'linear_{i}'])
+            c_z = back * self.leaky_relu_grad(self.outputs[f'linear_{i}']) if i != self.num_layers else back * self.sigmoid_grad(self.outputs[f'linear_{i}'])
             self.gradients[f'b{i}'] = np.mean(c_z, axis=0)
             self.gradients[f'W{i}'] = np.dot(self.outputs[f'act_{i-1}'].T, c_z) / self.batch_size
             back = np.dot(c_z, self.params[f'W{i}'].T)
@@ -166,7 +174,8 @@ class NeuralNetwork:
         lr: float = 0.001,
         b1: float = 0.9,
         b2: float = 0.999,
-        eps: float = 1e-8
+        eps: float = 1e-8,
+        weight_decay = 0
     ):
         """Update the parameters of the model using the previously calculated
         gradients.
@@ -184,20 +193,20 @@ class NeuralNetwork:
             # dw += self.weight_decay * weight
             for key in self.params.keys():
 
-                self.m[key] = b1 * self.m[key] + (1 - b1) * self.params[key] # momentum
-                self.v[key] = b2 * self.v[key] + (1 - b2) * (self.params[key]**2)
+                self.m[key] = b1 * self.m[key] + (1 - b1) * self.gradients[key] # momentum
+                self.v[key] = b2 * self.v[key] + (1 - b2) * (self.gradients[key]**2)
 
                 m_corrected = self.m[key] / (1 - b1**t)
                 v_corrected = self.v[key] / (1 - b2**t)
 
-                self.params[key] -= lr * m_corrected / ((v_corrected**0.5) + eps) 
+                self.params[key] -= lr * (m_corrected / ((v_corrected**0.5) + eps) + self.params[key] * weight_decay)
 
         elif self.opt == 'SGD':
             # dw += self.weight_decay * weight
             for key in self.params.keys():
 
-                self.m[key] = b1 * self.m[key] + (1 - b1) * self.params[key] # momentum
-                self.params[key] -= lr * self.m[key]
+                self.m[key] = b1 * self.m[key] + (1 - b1) * self.gradients[key] # momentum
+                self.params[key] -= lr * (self.m[key] + self.params[key] * weight_decay)
 
         else:
             raise NotImplementedError
