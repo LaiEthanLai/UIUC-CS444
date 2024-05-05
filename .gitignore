@@ -140,5 +140,6 @@ cats/
 MNIST_data/
 Abstract_gallery/
 Abstract_gallery_2/
+data/
 
 *.pt
