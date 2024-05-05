@@ -24,19 +24,12 @@ class Perceptron:
     def compute_grad(self, pred: np.ndarray, label: np.ndarray, data: np.ndarray) -> np.ndarray:
         
         if self.n_class == 2:
-            # grad = np.zeros(data.shape)
-            # for i, y_i in enumerate(label):
-            #     if y_i == 1:
-            #         grad[i] = - int(pred[i] < 0) * data[i]
-            #     elif y_i == 0:
-            #         grad[i] = int(pred[i] > 0) * data[i]
 
             label = label * 2 - 1 # {0, 1} -> {1, -1}
             pred = label * pred
             grad = (pred < 0)[:, None] * data * (-label[:, None]) # [:, None] for Python broadcasting
 
         elif self.n_class > 2:
-            
             
             thersholds = np.zeros(self.batch_size)
             for idx, cls in enumerate(label):

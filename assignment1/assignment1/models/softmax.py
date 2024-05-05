@@ -13,7 +13,7 @@ class Softmax:
             epochs: the number of epochs to train for
             reg_const: the regularization constant
         """
-        self.w = None  # TODO: change this
+        self.w = None  
         self.lr = lr
         self.epochs = epochs
         self.reg_const = reg_const
@@ -42,7 +42,6 @@ class Softmax:
         Returns:
             gradient with respect to weights w; an array of same shape as w
         """
-        # TODO: implement me
         
         return np.matmul(y_train.T, X_train) / X_train.shape[0]
 
@@ -60,7 +59,6 @@ class Softmax:
                 N examples with D dimensions
             y_train: a numpy array of shape (N,) containing training labels
         """
-        # TODO: implement me
 
         # one hot encoding
         vector_lookup = np.eye(y_train.max() + 1)
@@ -115,7 +113,6 @@ class Softmax:
                 length N, where each element is an integer giving the predicted
                 class.
         """
-        # TODO: implement me
 
         X_test = self.min_max(X_test)
         X_test = np.insert(X_test, X_test.shape[1], 1, axis=1)

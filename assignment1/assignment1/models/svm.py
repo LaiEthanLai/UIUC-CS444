@@ -13,7 +13,7 @@ class SVM:
             epochs: the number of epochs to train for
             reg_const: the regularization constant
         """
-        self.w = None  # TODO: change this
+        self.w = None 
         self.lr = lr
         self.epochs = epochs
         self.reg_const = reg_const
@@ -39,25 +39,12 @@ class SVM:
         # TODO: implement me
 
         if self.n_class == 2:
-            # grad = np.zeros(X_train.shape)
-            # for i, y_i in enumerate(y_train):
-            #     if y_i == 1:
-            #         grad[i] = - int(pred[i] < 1) * X_train[i]
-            #     elif y_i == 0:
-            #         grad[i] = int(pred[i] > 1) * X_train[i]
 
             y_train = y_train * 2 - 1 # {0, 1} -> {1, -1}
             pred = y_train * pred
             grad = (pred < 1)[:, None] * X_train * (-y_train[:, None]) # [:, None] for Python broadcasting
 
         elif self.n_class > 2:
-            # h, w = self.w.shape
-            # grad = np.zeros((self.batch_size, h, w))
-            # for idx, y_i in enumerate(y_train):
-            #     for c in range(pred.shape[1]):
-            #         if c != y_i and (pred[idx][y_i]-pred[idx][c] < 1):
-            #             grad[idx][c] += X_train[y_i]
-            #             grad[idx][y_i] -=  X_train[y_i]
             
             thersholds = np.zeros(self.batch_size)
             for idx, cls in enumerate(y_train):

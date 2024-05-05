@@ -11,19 +11,12 @@ class Logistic:
             lr: the learning rate
             epochs: the number of epochs to train for
         """
-        self.w = None  # TODO: change this
+        self.w = None  
         self.lr = lr
         self.epochs = epochs
         self.threshold = threshold
 
     def compute_grad(self, pred: np.ndarray, label: np.ndarray, data: np.ndarray) -> np.ndarray:
-
-        # grad = np.zeros(data.shape)
-        # for i, y_i in enumerate(label):
-        #     if y_i == 1:
-        #         grad[i] = -self.sigmoid(-pred[i]) * data[i]
-        #     elif y_i == 0:
-        #         grad[i] = self.sigmoid(pred[i]) * data[i]
 
         label = label * 2 - 1 # {0, 1} -> {1, -1}
         pred = label * pred
@@ -68,7 +61,6 @@ class Logistic:
         self.w = np.random.randn(12)*1e-2 # w/ bias
         self.w[-1] = 0
         
-        # train_iter = X_train.shape[0] // batch_size + int(X_train.shape[0] % batch_size != 0) (deal with different weight shapes)
         train_iter = X_train.shape[0] // batch_size # neglect last X_train.shape[0] % batch_size data
 
         for epoch in range(self.epochs):
@@ -102,6 +94,6 @@ class Logistic:
                 length N, where each element is an integer giving the predicted
                 class.
         """
-        # TODO: implement me
+        
         X_test = (X_test - X_test.min()) / (X_test.max() - X_test.min()) 
         return (self.sigmoid(np.dot(np.insert(X_test, X_test.shape[1], 1, axis=1), self.w) > 0)).astype(np.int32)
