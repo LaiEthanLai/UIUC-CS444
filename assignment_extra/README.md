@@ -1,11 +1,14 @@
 # Extra Credit Assignment: Adversarial Attacks
 ## Attack methods
 In this assignment, we attack pre-trained Imagenet models provided by PyTorch, namely ResNet-18, ResNet-34, ResNet-50, ResNet-101, Inception V3, ViT_B_16, and VGG19 with Batch Normalization with the following 3 attacks in this [paper](https://arxiv.org/pdf/1607.02533):
-- Fast Gradient Sign (FGSM)
+- Fast Gradient Sign (FGSM) 
+
 The image itself is treated as trainable parameters. The image is fed to the targeted neural network and the gradient of the image is calculated by back propagation. The image is then perturbed in the direction of the signed gradient vector to increase the loss, i.e., increasing the chance that the model misclassify this image.
 - Iterative Gradient Sign
+
 Unlike, the FGSM method which only takes a step to perturb the image, the Iterative Gradient Sign method takes multiple gradient steps to perturbed the image. However, after each iteration, the perturbed image is clipped to ensure that it is in the $\epsilon$-neighbourhood of the original image.  
 - Iterative Least Likely Class Method
+
 Previous methods perturbed the image in the direction that increases the loss function. For the Iterative Least Likely Class Method, we perturbed the image, letting the model classifies it to the class that is significantly dissimilar (i.e., the class corresponding to the least element of the output logit) to the original class. 
 
 Note that we only attack images in Imagenette. 
