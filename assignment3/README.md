@@ -35,8 +35,10 @@ To train the model and run the experiements, please refer to `assignment3_part1/
 ## Part 2: Object Detection
 In this part, we implement the loss function of YOLO (eq. 3 in [this paper](https://pjreddie.com/media/files/papers/yolo_1.pdf)) and train an object detector on the PASCAL VOC 2007 dataset. 
 
-#### Backbone Network
+### Backbone Network
 The design of the backbone network is inspired by [DetNet](https://arxiv.org/abs/1804.06215). Specifically, the first four blocks of the backbone network is identical to a ResNet-50, enabling us to leverage the Imagenet pre-trained weight as initialization. We added an extra block while maintaining the spatial resolution, facilitating the model to capture smaller objects and more precise bounding boxes for large objects. We note that high-level features from deeper layers also benefit the classification (To detect an object, we predict its bounding box and class).
+
+Please refer the YOLO loss in `yolo_loss.py` and the backbone network in `src/resnet_yolo.py` for details. 
 
 ## Result
 Organizing...
