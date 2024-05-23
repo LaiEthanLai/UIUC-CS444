@@ -12,7 +12,7 @@ from torchvision.utils import save_image
 from gan.models import Generator, Discriminator
 from gan.losses import w_gan_disloss, w_gan_genloss, compute_gradient_penalty
 from gan.utils import sample_noise
-from GAN_domain_encoder import In_domain_encoder, freeze_model
+from Extra_Credit_GAN_domain_encoder import In_domain_encoder, freeze_model
 
 from argparse import ArgumentParser
 from collections import OrderedDict
