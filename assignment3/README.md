@@ -41,4 +41,5 @@ The design of the backbone network is inspired by [DetNet](https://arxiv.org/abs
 Please refer the YOLO loss in `yolo_loss.py` and the backbone network in `src/resnet_yolo.py` for details. 
 
 ## Result
-Organizing...
+
+<img height="250" width="375" alt="" src="output/output.gif" />
