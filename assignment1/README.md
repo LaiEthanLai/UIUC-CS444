@@ -4,10 +4,10 @@ In this assigment, we implement various linear classifiers, namely logistic regr
 
 ## Model
 We implement the following classifiers (in their respective files):
-1. Logistic regression (logistic.py)
-2. Perceptron (perceptron.py)
-3. SVM (svm.py)
-4. Softmax (softmax.py)
+1. Logistic regression (`logistic.py`)
+2. Perceptron (`perceptron.py`)
+3. SVM (`svm.py`)
+4. Softmax (`softmax.py`)
 
 For the logistic regression classifier, multi-class prediction is difficult, as it requires a one-vs-one or one-vs-rest classifier for every class. Therefore, we only use logistic regression on the Rice dataset.
 
