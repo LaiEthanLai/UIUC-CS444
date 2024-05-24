@@ -42,4 +42,4 @@ Please refer the YOLO loss in `yolo_loss.py` and the backbone network in `src/re
 
 ## Result
 
-<img height="250" width="375" alt="" src="output/output.gif" />
+<img height="500" width="750" alt="" src="output/output.gif" />
