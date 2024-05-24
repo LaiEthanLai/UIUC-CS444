@@ -10,4 +10,5 @@ In this [paper](https://bmild.github.io/fourfeat/), the author researched the pr
 In `neural_network.ipynb`, we implement the fourier feature mapping and the training code. `train.py` and `test.py` is the PyTorch version of our implementation for extra credit.
 
 ## Result
-Organizing...
+
+![](https://imgur.com/a/umQSe8Z)
