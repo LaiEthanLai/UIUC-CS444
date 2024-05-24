@@ -11,4 +11,6 @@ In `neural_network.ipynb`, we implement the fourier feature mapping and the trai
 
 ## Result
 
+![](https://i.imgur.com/bIP10FX.png)
+
 ![](https://i.imgur.com/X7wHOFl.png)
